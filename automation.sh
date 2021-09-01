@@ -4,11 +4,8 @@ timestamp=$(date '+%d%m%Y-%H%M%S')
 s3_bucket="upgrad-hemant"
 package="apache2"
 file_name="$myname-httpd-logs-$timestamp.tar"
-
-bold=$(tput bold)
-normal=$(tput sgr0)
-
-html_table_code="${bold}Log Type\tTime Created\tType\tSize${normal}"
+html_table_code="<html><head></head><body><table style=margin:auto><tr><th width=30%>Log Type </th><th width=30%> Time Created </th><th width=20%> Type </th><th width=20%> Size</th><tr>"
+html_close_table="</table></body></html>"
 cronstatus=$(ls /etc/cron.d/ | grep 'automation' && echo 'yes' || echo 'no')
 
 echo "---------------------------------------------------------------"
@@ -82,11 +79,13 @@ echo "---------------------------------------------------------------"
 
 if [ -e /var/www/html/inventory.html ]; then
     echo "inventory.html file already exists. Updating content now"
-    echo -e "\n $(ls $file_name | cut -d '-' -f 2-3)\t$timestamp\t$(ls $file_name | awk -F . '{print $NF}')\t$(du -k $file_name | cut -f1)" >> /var/www/html/inventory.html
+    content="<tr style=text-align:center><td width=25%>$(ls $file_name | cut -d '-' -f 2-3) </td><td width=25%> $timestamp </td><td width=25%> $(ls $file_name | awk -F . '{print $NF}') </td><td width=25%> $(du -k $file_name | cut -f1)</td></tr>"
+    sed -i "\$i $content" /var/www/html/inventory.html
 else
     echo "inventory.html not found. creating one now.."
-    echo -e $html_table_code > /var/www/html/inventory.html
-    echo -e "\n $(ls $file_name | cut -d '-' -f 2-3)\t$timestamp\t$(ls $file_name | awk -F . '{print $NF}')\t$(du -k $file_name | cut -f1)" >> /var/www/html/inventory.html
+    echo $html_table_code > /var/www/html/inventory.html
+    echo "<tr style=text-align:center><td width=25%>$(ls $file_name | cut -d '-' -f 2-3) </td><td width=25%> $timestamp </td><td width=25%> $(ls $file_name | awk -F . '{print $NF}') </td><td width=25%> $(du -k $file_name | cut -f1)</td></tr>" >> /var/www/html/inventory.html
+    echo $html_close_table >> /var/www/html/inventory.html
 fi
 
 #cron job
@@ -94,7 +93,7 @@ echo "---------------------------------------------------------------"
 echo "checking cronjob .."
 echo "---------------------------------------------------------------"
 if [[ $cronstatus == "no" ]]; then
-    echo "automation cron job not found, creating now.."
+    echo "cron job not found, adding one."
     touch /etc/cron.d/automation
     echo "0 8 * * * root /root/Automation_Project/automation.sh" >> /etc/cron.d/automation
 else
